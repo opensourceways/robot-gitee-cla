@@ -10,6 +10,7 @@ import (
 
 	"github.com/opensourceways/community-robot-lib/config"
 	"github.com/opensourceways/community-robot-lib/robot-gitee-framework"
+	"github.com/opensourceways/community-robot-lib/utils"
 	sdk "github.com/opensourceways/go-gitee/gitee"
 	"github.com/sirupsen/logrus"
 )
@@ -61,7 +62,7 @@ func (bot *robot) RegisterEventHandler(f framework.HandlerRegitster) {
 }
 
 func (bot *robot) handlePREvent(e *sdk.PullRequestEvent, c config.Config, log *logrus.Entry) error {
-	if e.GetPullRequest().GetState() != sdk.ActionOpen {
+	if e.GetPullRequest().GetState() != "open" {
 		return nil
 	}
 
@@ -132,7 +133,10 @@ func (bot *robot) handle(
 			}
 
 			if notifyAuthorIfSigned {
-				return bot.cli.CreatePRComment(org, repo, prNumber, alreadySigned(pr.GetUser().GetLogin()))
+				return bot.cli.CreatePRComment(
+					org, repo, prNumber,
+					alreadySigned(pr.GetUser().GetLogin()),
+				)
 			}
 		}
 
@@ -180,13 +184,12 @@ func (bot *robot) getPRCommitsAbout(
 	for i := range commits {
 		c := &commits[i]
 
-		email := authorEmailOfCommit(c)
-		if email == "" {
+		email := strings.Trim(authorEmailOfCommit(c), " ")
+		if !utils.IsValidEmail(email) {
 			unsigned = append(unsigned, c)
 			continue
 		}
 
-		email = normalEmail(email)
 		if v, ok := result[email]; ok {
 			if !v {
 				unsigned = append(unsigned, c)
@@ -230,16 +233,6 @@ func getAuthorOfCommit(
 	}
 
 	return commit.Author.Email
-}
-
-func normalEmail(email string) string {
-	emailRe := regexp.MustCompile(`[a-zA-Z0-9_.-]+@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*\.[a-zA-Z]{2,6}`)
-
-	v := emailRe.FindStringSubmatch(email)
-	if len(v) > 0 {
-		return v[0]
-	}
-	return email
 }
 
 func isSigned(email, url string) (bool, error) {
