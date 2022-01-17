@@ -27,6 +27,7 @@ go_library(
     importpath = "github.com/opensourceways/robot-gitee-cla",
     visibility = ["//visibility:private"],
     deps = [
+        "@com_github_huaweicloud_golangsdk//:go_default_library",
         "@com_github_opensourceways_community_robot_lib//config:go_default_library",
         "@com_github_opensourceways_community_robot_lib//giteeclient:go_default_library",
         "@com_github_opensourceways_community_robot_lib//logrusutil:go_default_library",
